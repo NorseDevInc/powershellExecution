@@ -1,0 +1,68 @@
+# PowerShell script
+Add-Type -AssemblyName System.Windows.Forms
+
+# Get the directory of the script
+$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+# Create a form
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Custom Window"
+$form.Size = New-Object System.Drawing.Size(600, 400)
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
+
+# Create a WebBrowser control
+$webBrowser = New-Object System.Windows.Forms.WebBrowser
+$webBrowser.Url = (Get-Item -Path "$scriptDirectory\CombinedFile.ps1html").FullName
+$webBrowser.ScrollBarsEnabled = $false
+$webBrowser.ScriptErrorsSuppressed = $true
+
+# Add the WebBrowser control to the form
+$form.Controls.Add($webBrowser)
+
+# Show the form
+$form.Add_Shown({$form.Activate()})
+$form.ShowDialog()
+
+
+# HTML content
+#$htmlContent = 
+@'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Interactive Window</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        function handleClick() {
+            try {
+                var shell = new ActiveXObject("WScript.Shell");
+                shell.Run("powershell.exe -Command New-Item -ItemType Directory -Path 'C:\\Users\\thewa\\OneDrive\\Desktop\\myTest\\fold'");
+            } catch (error) {
+                alert('Error executing PowerShell command: ' + error.message);
+            }
+        }
+
+        function buttonClick() {
+            alert('Button Clicked!');
+        }
+    </script>    
+</head>
+
+<body>
+    <h1>Hello, User!</h1>
+    <p>This is a custom user-interactive window.</p>
+    <button onclick="handleClick()">Create Directory</button>
+    <button onclick="buttonClick()">Send Alert</button>
+</body>
+</html>
+'@
+
+#Invoke-Expression $htmlContent
