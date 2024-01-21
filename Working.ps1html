@@ -1,0 +1,105 @@
+<#
+.DESCRIPTION
+The script combines PowerShell and HTML content in a single file.
+#>
+
+# Define the PowerShell object as a COM-visible class
+Add-Type @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    [ComVisible(true)]
+    public class PowerShellObject {
+        public void ExecutePowerShellScript() {
+            // Your custom PowerShell code goes here
+            Console.WriteLine("Executing custom function in PowerShell script.");
+        }
+    }
+"@
+
+# Create an instance of the COM-visible class
+$psObject = New-Object PowerShellObject
+
+# HTML content using a here-string
+$htmlContent = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Interactive Window</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        function callCustomPowerShellFunction() {
+            try {
+                // Trigger PowerShell script execution
+                window.external.ExecutePowerShellScript();
+            } catch (error) {
+                alert('Error calling PowerShell script: ' + error.message);
+            }
+        }
+
+        function openNotepad() {
+            try {
+                window.open("notepad.exe");
+            } catch (error) {
+                alert('Error opening notepad: ' + error.message);
+            }
+        }
+
+        function openAlert() {
+            alert('OPEN');
+        }
+    </script>
+</head>
+<body>
+    <h1>Hello, User!</h1>
+    <p>This is a custom user-interactive window.</p>
+
+    <!-- Button with an onclick attribute to call the JavaScript function -->
+    <button onclick="callCustomPowerShellFunction()">Call Custom PowerShell Function</button>
+    <button onclick="openNotepad()">Open Notepad</button>
+    <button onclick="openAlert()">Open Alert</button>
+</body>
+</html>
+"@
+
+# Create a form
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Custom Window"
+$form.Size = New-Object System.Drawing.Size(1200, 800)
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
+
+# Create a WebBrowser control
+$webBrowser = New-Object System.Windows.Forms.WebBrowser
+$webBrowser.ObjectForScripting = $psObject
+$webBrowser.DocumentText = @"
+$htmlContent
+"@
+$webBrowser.ScrollBarsEnabled = $false
+$webBrowser.ScriptErrorsSuppressed = $true
+$webBrowser.Size = New-Object System.Drawing.Size(1200, 800)
+
+# Subscribe to DocumentCompleted event to ensure the document is fully loaded
+$documentCompletedHandler = {
+    # Remove the event handler to prevent multiple calls
+    $webBrowser.Remove_DocumentCompleted($documentCompletedHandler)
+
+    # Show the form after the document is fully loaded
+    $form.Add_Shown({$form.Activate()})
+}
+
+# Add the DocumentCompleted event handler
+$webBrowser.Add_DocumentCompleted($documentCompletedHandler)
+
+# Add the WebBrowser control to the form
+$form.Controls.Add($webBrowser)
+
+# Start the message loop
+[System.Windows.Forms.Application]::Run($form)
